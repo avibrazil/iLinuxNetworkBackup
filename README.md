@@ -1,9 +1,15 @@
 OK guys, I'm moving to 100% satisfying solution with [libimobiledevice](https://libimobiledevice.org/), which is packaged in most Linux distributions, and [Jackson Coxson's netmuxd](https://github.com/jkcoxson/netmuxd). Netmuxd complements usbmuxd with network capabilities and both must run together.
 
-Netmuxd was not available in my platform package set, and OpenSSL needs a little tweeking, so a preparation script is required. Here are the steps to prepare my Fedora 42 and **successfully backup my iPhone over the network**. Nothing has to be done as root, **all scripts and commands executed by my regular user**.
+Netmuxd was not available in my platform package set, and OpenSSL needs a little tweeking, so a preparation script is required. Here are the steps to prepare my Fedora 42/43 and **successfully backup my iPhone over the network**. Nothing has to be done as root, **all scripts and commands executed by my regular user**.
 
 ## Prepare things
-This script will discover [latest version of netmuxd](https://github.com/jkcoxson/netmuxd/releases/tag/v0.3.0) for my platform and download it, and will prepare a configuration file for OpenSSL, so pairing won't fail.
+
+Required packages:
+```shell
+dnf install -y libimobiledevice-utils
+```
+
+Following script will discover [latest version of netmuxd](https://github.com/jkcoxson/netmuxd/releases/tag/v0.3.0) for my platform and download it, and will prepare a configuration file for OpenSSL, so pairing won't fail.
 ```shell
 #!/bin/sh
 

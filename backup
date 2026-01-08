@@ -1,7 +1,7 @@
 #!/bin/sh
 
 PROG_NAME=iBackup
-if [ -n "$TMUX" ]; then
+if [[ -n "$TMUX" ]]; then
 	tmux rename-window "$PROG_NAME"
 	trap 'tmux rename-window "$PROG_NAME finished"' EXIT
 else
@@ -20,8 +20,19 @@ pid=$!
 # Wait a little bit until netmuxd finds device
 sleep 10
 
+# Find device by UUID or nickname as symlink
+if [[ -n "$1" ]]; then
+	uuid=`readlink $folder/$1`
+	[[ -z "$uuid" ]] && uuid=$1
+fi
+
+if [[ -n "$uuid" ]]; then
+	echo "Backing up device with UUID=$uuid"
+	uuid="-u $uuid"	
+fi
+
 # Start (incremental) backup
-USBMUXD_SOCKET_ADDRESS=127.0.0.1:27015 OPENSSL_CONF="$folder/openssl-weak.conf" time idevicebackup2 backup -n --full "$folder"
+USBMUXD_SOCKET_ADDRESS=127.0.0.1:27015 OPENSSL_CONF="$folder/openssl-weak.conf" time idevicebackup2 backup -n --full $uuid "$folder"
 
 kill $pid
 

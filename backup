@@ -1,5 +1,8 @@
 #!/bin/sh
 
+folder=/media/Backup/MobileSync
+netmuxd=netmuxd-x86_64-linux-gnu
+
 PROG_NAME=iBackup
 if [[ -n "$TMUX" ]]; then
 	tmux rename-window "$PROG_NAME"
@@ -8,9 +11,6 @@ else
 	printf '\033]0;%s\007' $PROG_NAME
 	trap 'printf "\033]0;%s\007" "$PROG_NAME finished"' EXIT
 fi
-
-folder=/media/Backup/MobileSync
-netmuxd=netmuxd-x86_64-linux-gnu
 
 # cd "$folder"
 
@@ -28,7 +28,7 @@ fi
 
 if [[ -n "$uuid" ]]; then
 	echo "Backing up device with UUID=$uuid"
-	uuid="-u $uuid"	
+	uuid="-u $uuid"
 fi
 
 # Start (incremental) backup

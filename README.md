@@ -6,69 +6,104 @@ Netmuxd was not available in my platform package set, and OpenSSL needs a little
 
 Required packages:
 ```shell
-dnf install -y libimobiledevice-utils
+dnf install -y libimobiledevice-utils wget jq
 ```
 
-Following script will discover [latest version of netmuxd](https://github.com/jkcoxson/netmuxd/releases/tag/v0.3.0) for my platform and download it, and will prepare a configuration file for OpenSSL, so pairing won't fail.
-```shell
-#!/bin/sh
+Edit the `prepare` and `backup` scripts and change path of folder that will
+contain backups for your iDevices. If your platform isn‘t x86_64, also change
+the binary name of `netmuxd` that will be downloaded. Mine has:
 
+```shell
 folder=/media/Backup/MobileSync
 netmuxd=netmuxd-x86_64-linux-gnu
-
-echo "Preparing compatible OpenSSL configuration"
-
-# From  https://github.com/libimobiledevice/libimobiledevice/issues/1606#issuecomment-2543116644
-cat <<EOF > "$folder/openssl-weak.conf"
-.include /etc/ssl/openssl.cnf
-[openssl_init]
-alg_section = evp_properties
-[evp_properties]
-rh-allow-sha1-signatures = yes
-EOF
-
-echo "Getting netmuxd binary..."
-
-latest_netmuxd=`wget -q -O - https://api.github.com/repos/jkcoxson/netmuxd/releases/latest | jq -r '.assets[].browser_download_url' | grep $netmuxd`
-
-wget -q $latest_netmuxd -O "$folder/$netmuxd"
-
-chmod a+x "$folder/$netmuxd"
 ```
 
-## First pair device with a USB cable
-We'll use the OpenSSL configuration file created above
+I’ll also set and environment variable here just to make this documentation
+more readable and precise:
+
 ```shell
-OPENSSL_CONF=/media/Backup/MobileSync/openssl-weak.conf idevicepair pair
+IBACKUP=/media/Backup/MobileSync
+```
+
+## Prepare you computer for wireless iBackup
+
+Run the `prepare` script. It will discover [latest version of netmuxd](https://github.com/jkcoxson/netmuxd/releases/tag/v0.3.0)
+for my platform and download it, and will prepare a configuration file for
+OpenSSL, so pairing won't fail.
+
+```shell
+./prepare
+```
+
+## Pair device with a USB cable
+We'll use the OpenSSL configuration file created by `prepare` script.
+
+```shell
+OPENSSL_CONF=$IBACKUP/openssl-weak.conf idevicepair pair
 ```
 This creates some required signatures in `/var/lib/lockdown/{device_UDID}.plist`
 
-## Make backup
-This method assumes usbmuxd is also running in your system, which is the regular setup for most Linux distros. [Other methods are documented in netmuxd home page](https://github.com/jkcoxson/netmuxd).
+Note that I‘m passing the OpenSSL configuration file that was created in the
+folder mentioned above. You‘ll have to change this command a bit to match your
+installation.
 
-This script runs netmuxd, waits a bit until it finds my device in the network and then use `idevicebackup2` to make the backup. A folder named with my device's UDID will be created under `$folder` (if it doesn't exists).
+## Make backup over WiFi
 
-Since backup is mostly controlled by the device, this method also works for incremental backups even if the backup folder already has a backup created by Apple official software.
+```shell
+./backup
+```
+
+This method assumes `usbmuxd` is also running in your system, which is the regular setup for most Linux distros.
+[Other methods are documented in netmuxd home page](https://github.com/jkcoxson/netmuxd).
+
+This script runs `netmuxd`, waits a bit until it finds my device in the network
+and then use `idevicebackup2` to make the backup. A folder named with my
+device’s UDID will be created under `$folder` (if it doesn’t exists).
+
+Since backup is mostly controlled by the device, this method also works for
+incremental backups even if the backup folder already has a backup created by
+Apple official software for macOS or Windows.
 
 Your device will ask for your pin and then start backup.
+
+iOS backup over the network takes a long time, like 20 minutes for an
+incremental backup, but is pretty solid and stable and I can use my device
+while roaming through multiple WiFi APs at home.
+
+I full backup will take even longer. But you can use your device while backup is
+happening.
+
+## Handling multiple devices
+
+Script will get confused if it senses multiple iOS/iPadOS devices on local
+network. So you can pass a UUID as parameter to my `backup` script to select
+the correct device:
+
 ```shell
-#!/bin/sh
-
-folder=/media/Backup/MobileSync
-netmuxd=netmuxd-x86_64-linux-gnu
-
-"$folder/$netmuxd" --disable-unix --host 127.0.0.1 &
-pid=$!
-
-# Wait a little bit until netmuxd finds device
-sleep 15
-
-# Start (incremental) backup
-USBMUXD_SOCKET_ADDRESS=127.0.0.1:27015 OPENSSL_CONF="$folder/openssl-weak.conf" idevicebackup2 backup -n --full "$folder"
-
-kill $pid
+./backup 00012340-000C3D654321001C
 ```
-You might need to change these scripts a bit if you have multiple devices to backup.
 
-iOS backup over the network takes a long time, like 20 minutes for an incremental backup, but is pretty solid and stable and I can use my device while roaming through multiple WiFi APs at home.
+But thats annoying, so you can give devices some nicknames via a symbolic link.
+Like this:
 
+```shell
+cd $IBACKUP
+ln -s 00012340-000C3D654321001C my
+ln -s 00043210-000C3D654321001C wife
+ln -s 00011220-000C3D654321001C son
+```
+
+Then backup your wife’s device like this:
+```shell
+./backup wife
+```
+
+Backup yours:
+```shell
+./backup my
+```
+
+# Desire
+
+I‘d love to see someone creating a web UI with Open ID Connect login to let all
+my family go there and start a backup.

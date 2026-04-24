@@ -1,7 +1,6 @@
 #!/bin/sh
 
 folder=/media/Backup/MobileSync
-netmuxd=netmuxd-x86_64-linux-gnu
 
 PROG_NAME=iBackup
 if [[ -n "$TMUX" ]]; then
@@ -13,12 +12,6 @@ else
 fi
 
 # cd "$folder"
-
-"$folder/$netmuxd" --disable-unix --host 127.0.0.1 &
-pid=$!
-
-# Wait a little bit until netmuxd finds device
-sleep 10
 
 # Find device by UUID or nickname as symlink
 if [[ -n "$1" ]]; then
@@ -32,7 +25,5 @@ if [[ -n "$uuid" ]]; then
 fi
 
 # Start (incremental) backup
-USBMUXD_SOCKET_ADDRESS=127.0.0.1:27015 OPENSSL_CONF="$folder/openssl-weak.conf" time idevicebackup2 backup --network --full $uuid "$folder"
-
-kill $pid
+OPENSSL_CONF="$folder/openssl-weak.conf" time idevicebackup2 backup --full $uuid "$folder"
 

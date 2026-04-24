@@ -1,4 +1,4 @@
-OK guys, I'm moving to 100% satisfying solution with [libimobiledevice](https://libimobiledevice.org/), which is packaged in most Linux distributions, and [Jackson Coxson's netmuxd](https://github.com/jkcoxson/netmuxd). Netmuxd complements usbmuxd with network capabilities and both must run together.
+OK guys, I'm moving to 100% satisfying solution with [libimobiledevice](https://libimobiledevice.org/), which is packaged in most Linux distributions, and [Jackson Coxson's netmuxd](https://github.com/jkcoxson/netmuxd). Netmuxd complements usbmuxd with network capabilities and both can be running at the same time.
 
 Netmuxd was not available in my platform package set, and OpenSSL needs a little tweeking, so a preparation script is required. Here are the steps to prepare my Fedora 42/43 and **successfully backup my iPhone over the network**. Nothing has to be done as root, **all scripts and commands executed by my regular user**.
 
@@ -29,32 +29,25 @@ IBACKUP=/media/Backup/MobileSync
 
 Run the `prepare` script. It will discover [latest version of netmuxd](https://github.com/jkcoxson/netmuxd/releases/tag/v0.3.0)
 for my platform and download it, and will prepare a configuration file for
-OpenSSL, so pairing won't fail.
+OpenSSL that reenables SHA1, so pairing won’t fail.
 
 ```shell
 ./prepare
 ```
 
 ## Pair device with a USB cable
-We'll use the OpenSSL configuration file created by `prepare` script.
+We’ll use the OpenSSL configuration file created by `prepare` script.
 
 ```shell
 OPENSSL_CONF=$IBACKUP/openssl-weak.conf idevicepair pair
 ```
 This creates some required signatures in `/var/lib/lockdown/{device_UDID}.plist`
 
-Note that I‘m passing the OpenSSL configuration file that was created in the
-folder mentioned above. You‘ll have to change this command a bit to match your
-installation.
-
 ## Make backup over WiFi
 
 ```shell
 ./backup
 ```
-
-This method assumes `usbmuxd` is also running in your system, which is the regular setup for most Linux distros.
-[Other methods are documented in netmuxd home page](https://github.com/jkcoxson/netmuxd).
 
 This script runs `netmuxd`, waits a bit until it finds my device in the network
 and then use `idevicebackup2` to make the backup. A folder named with my
@@ -68,15 +61,15 @@ Your device will ask for your pin and then start backup.
 
 iOS backup over the network takes a long time, like 20 minutes for an
 incremental backup, but is pretty solid and stable and I can use my device
-while roaming through multiple WiFi APs at home.
+while roaming through multiple WiFi access points (antenas) at home.
 
-I full backup will take even longer. But you can use your device while backup is
+A full backup will take even longer. But you can use your device while backup is
 happening.
 
 ## Handling multiple devices
 
 Script will get confused if it senses multiple iOS/iPadOS devices on local
-network. So you can pass a UUID as parameter to my `backup` script to select
+network. So you can pass a UUID as parameter to the `backup` script to select
 the correct device:
 
 ```shell
@@ -88,9 +81,9 @@ Like this:
 
 ```shell
 cd $IBACKUP
-ln -s 00012340-000C3D654321001C my
 ln -s 00043210-000C3D654321001C wife
 ln -s 00011220-000C3D654321001C son
+ln -s 00012340-000C3D654321001C my
 ```
 
 Then backup your wife’s device like this:
@@ -102,6 +95,11 @@ Backup yours:
 ```shell
 ./backup my
 ```
+
+## Backup with cable
+
+I’m adding the `cable-backup` scripts that does the same but *without netmuxd*
+(but with usbmuxd), in case you want to do a backup by cable.
 
 # Desire
 

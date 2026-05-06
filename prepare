@@ -1,7 +1,6 @@
 #!/bin/sh
 
 folder=/media/Backup/MobileSync
-netmuxd=netmuxd-x86_64-linux-gnu
 
 
 echo "Preparing compatible OpenSSL configuration"
@@ -19,10 +18,9 @@ EOF
 
 echo "Getting netmuxd binary..."
 
-latest_netmuxd=`wget -q -O - https://api.github.com/repos/jkcoxson/netmuxd/releases/latest | jq -r '.assets[].browser_download_url' | grep $netmuxd`
+machine=`uname -m`
+latest_netmuxd=`wget -q -O - https://api.github.com/repos/jkcoxson/netmuxd/releases/latest | jq -r '.assets[].browser_download_url' | grep $machine | grep linux`
 
-wget -q $latest_netmuxd -O "$folder/$netmuxd"
-
-chmod a+x "$folder/$netmuxd"
-
-
+target=`mktemp -u --suffix .tgz`
+wget -q $latest_netmuxd -O $target
+tar -zxf $target -C $folder

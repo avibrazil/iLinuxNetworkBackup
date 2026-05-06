@@ -1,7 +1,6 @@
 #!/bin/sh
 
 folder=/media/Backup/MobileSync
-netmuxd=netmuxd-x86_64-linux-gnu
 
 PROG_NAME=iBackup
 if [[ -n "$TMUX" ]]; then
@@ -14,7 +13,7 @@ fi
 
 # cd "$folder"
 
-"$folder/$netmuxd" --disable-unix --host 127.0.0.1 &
+"$folder/netmuxd" --disable-unix --host 127.0.0.1 &
 pid=$!
 
 # Wait a little bit until netmuxd finds device
